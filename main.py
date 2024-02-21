@@ -1,35 +1,167 @@
-from time import sleep
-import pandas as pd
-from bs4 import BeautifulSoup
-import os
+import tkinter as tk
 import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+import time
+from tkinter import ttk
+import csv_manager
 
+TITLE = "Wellcome to wallettraker v.berza by elhorDev"
 url = "https://www.productoscotizados.com/mercado/ibex-35"
-HEADER = "Wellcome to wallettraker v1.0 by elhorDev"
+wallet_total = []
+TITLE_POPUP = ['Venta de acciones', 'Compra de acciones']
 
-def borrado_dep_so():
-    borrado = None
-    if os.name == "posix":
-        borrado = "clear"
-    elif os.name == "ce" or os.name == "nt" or os.name == "dos":
-        borrado = "cls"
-    return borrado
+# Configuracion de la ventana Root.
+window = tk.Tk()
+window.title('WallettrakerUI by elhor')
+window.geometry('1920x1080')
+window.resizable(False, False)
+
+# Creamos frame para el label y el reloj
+frame_superior = tk.Frame(window)
+
+# Creamos el label.
+cabecera = tk.Label(frame_superior, text=TITLE)
+cabecera.config(font=('Terminal', 20))
+cabecera.grid(row=0, column=0)
+
+# Creamos el label para el reloj.
+reloj = tk.Label(frame_superior, text='')
+reloj.grid(row=0, column=1, columnspan=1)
+
+frame_superior.grid(row=0, column=0)
+
+# Creamos un frame para contener los dos botones
+frame_botones = tk.Frame(window)
 
 
+# Funcion e instancia de objetos entry para abrir popup y creamos Toplevel para compra y venta
+
+
+def abrir_popup_venta():
+    popup = tk.Toplevel(window)
+    popup.geometry('400x300')
+    popup.title(TITLE_POPUP[0])
+    titulo_popup = tk.Label(popup, text='Venta de valores')
+    titulo_popup.config(font=('Terminal', 20))
+    label_indice_valor = tk.Label(popup, text='Introduce el indice del valor')
+    label_cantidad_valor = tk.Label(popup, text='Introduce la cantidad de acciones')
+    label_gastos_venta_valor = tk.Label(popup, text='Introduce la cantidad de gastos de venta')
+    boton_efectuar_venta = tk.Button(popup, text='Confirmar Venta')
+
+    entry_indice_valor = tk.Entry(popup)
+    entry_cantidad_venta = tk.Entry(popup)
+    entry_cantidad_gastos = tk.Entry(popup)
+
+    titulo_popup.pack()
+
+    label_indice_valor.pack()
+    entry_indice_valor.pack()
+
+    label_cantidad_valor.pack()
+    entry_cantidad_gastos.pack()
+
+    label_gastos_venta_valor.pack()
+    entry_cantidad_venta.pack()
+
+    boton_efectuar_venta.pack()
+
+
+def abrir_popup_compra():
+    result = urlcontent(url)
+    realtime = scrapurl(result)
+
+    popup = tk.Toplevel(window)
+    popup.geometry('400x300')
+    popup.title(TITLE_POPUP[1])
+    titulo_popup = tk.Label(popup, text='Compra de valores')
+    titulo_popup.config(font=('Terminal', 20))
+    label_indice_valor = tk.Label(popup, text='Introduce el indice del valor')
+    label_precio_compra = tk.Label(popup, text='Introduce el precio de compra')
+    label_cantidad_valor = tk.Label(popup, text='Introduce la cantidad de acciones')
+    label_gastos_compra_valor = tk.Label(popup, text='Introduce la cantidad de gastos de compra')
+
+    entry_indice_valor = tk.Entry(popup)
+    entry_precio_compra = tk.Entry(popup)
+    entry_cantidad_compra = tk.Entry(popup)
+    entry_cantidad_gastos = tk.Entry(popup)
+
+    titulo_popup.pack()
+
+    label_indice_valor.pack()
+    entry_indice_valor.pack()
+
+    label_precio_compra.pack()
+    entry_precio_compra.pack()
+
+    label_cantidad_valor.pack()
+    entry_cantidad_gastos.pack()
+
+    label_gastos_compra_valor.pack()
+    entry_cantidad_compra.pack()
+
+    def efectuar_compra(realtime):
+        realtime = scrapurl(result)
+        compra = csv_manager.Stock(
+            realtime[entry_indice_valor.get()]['Stock'],
+            float(entry_precio_compra.get()),
+            int(entry_cantidad_compra.get()),
+            float(entry_cantidad_gastos.get()),
+            int(entry_indice_valor.get())
+        )
+
+        wallet_total.append(compra)
+
+    boton_efectuar_compra = tk.Button(popup, text='Confirmar compra', command=efectuar_compra)
+    boton_efectuar_compra.pack()
+
+
+# Creamos los botones de Compra y Venta
+
+boton_compra = tk.Button(frame_botones, text='Añadir compra', command=abrir_popup_compra)
+boton_compra.config(bg='red', font=('Terminal', 12))
+boton_venta = tk.Button(frame_botones, text='Vender Acciones', command=abrir_popup_venta)
+boton_venta.config(bg='green', font=('Terminal', 12))
+
+boton_compra.pack()
+boton_venta.pack()
+frame_botones.grid(row=1, column=1)
+
+# Creamos tabla.
+
+realtime_tabular = ttk.Treeview(window, height=35)
+
+realtime_tabular.grid(row=1, column=0)
+
+
+# Funcion para reloj en pantalla
+def actualizar_hora():
+    reloj.config(text=time.strftime('%H:%M:%S'), font=('Terminal', 20))
+    window.after(1000, actualizar_hora)
+
+
+actualizar_hora()
+
+
+# Creamos funcion para descarga de pagina a scrapear.
 def urlcontent(url):
     result = requests.get(url)
     return result
 
 
-def scrapurl(result,realtime):
+# Creamos funcion para filtrar, listar y crear los DataFrames del contenido de la pagina descargada.
+def scrapurl(result):
+    realtime = []
     url_content = BeautifulSoup(result.content, "html.parser")
-    acc_scrap = url_content.find_all(class_= "ellipsis-short")
+    acc_scrap = url_content.find_all(class_="ellipsis-short")
     price_scrap = url_content.find_all(class_="tv-price")
     time_scrap = url_content.find_all(class_="tv-time")
     close_scrap = url_content.find_all(class_="tv-close")
     var_scrap = url_content.find_all(class_="tv-change-percent")
     more_or_less_scrap = url_content.find_all(class_="tv-change-abs")
-    
+
+    index_number = -1
+    index = []
     acciones = []
     precio_acciones = []
     tiempo_acciones = []
@@ -38,198 +170,84 @@ def scrapurl(result,realtime):
     more_or_less_acciones = []
 
     for acc in acc_scrap:
-        acc = acc.text.replace("\t","").replace("\r","").replace("\n","")
+        acc = acc.text.replace("\t", "").replace("\r", "").replace("\n", "")
         acciones.append(acc)
+        index_number += 1
+        index.append(index_number)
+
     for price in price_scrap:
         if "\nPrecio\n" not in price.text:
-            price = price.text.replace("\n","").replace(",",".")
+            price = price.text.replace("\n", "").replace(",", ".")
             precio_acciones.append(float(price))
+
     for time in time_scrap:
         if "\nÚLTIMA ACTUALIZACIÓN\n" not in time.text:
-            time = time.text.replace("\n","")
+            time = time.text.replace("\n", "")
             tiempo_acciones.append(time)
+
     for var in var_scrap:
         if "\n%\n" not in var.text:
-            var = var.text.replace("\n","")
-            var_acciones.append(var) 
+            var = var.text.replace("\n", "")
+            var_acciones.append(var)
+
     for close in close_scrap:
         if "\nPRECIO DE CIERRE\n" not in close.text:
-            close = close.text.replace("\n","").replace("\t","").replace("\r","")
+            close = close.text.replace("\n", "").replace("\t", "").replace("\r", "")
             close_acciones.append(close)
+
     for more_or_less in more_or_less_scrap:
         if "\n+/-" not in more_or_less.text:
-            more_or_less = more_or_less.text.replace("\n","")
+            more_or_less = more_or_less.text.replace("\n", "")
             more_or_less_acciones.append(more_or_less)
-    for Stock, Price, Time, Var, Close, VarinPercent in zip(acciones, precio_acciones, tiempo_acciones, var_acciones, 
-                                                            close_acciones, more_or_less_acciones):
-        value = {"Stock":Stock, "Price":Price, "Time":Time, "%":Var, "Close":Close, "+/-":VarinPercent}
-        realtime.append(value) 
 
-def ad_to_wallet(realtime,wallet_total,borrado):
-    
-    df_acciones = pd.DataFrame(realtime)
-    print(df_acciones)
-    try:
-        opcion = int(input("Qué valor del Ibex 35 has comprado?\n"))
-                
-               
+    for Index, Stock, Price, Time, Var, Close, VarinPercent in zip(index, acciones, precio_acciones, tiempo_acciones,
+                                                                   var_acciones,
+                                                                   close_acciones, more_or_less_acciones):
+        value = {"Index": Index, "Stock": Stock, "Price": Price, "Time": Time, "%": Var, "Close": Close,
+                 "+/-": VarinPercent}
 
-        Stock = realtime[opcion]["Stock"]
-        Buyprice = float(input(f"A que precio has comprado las acciones de {Stock} ?\n"))
-        Qty = int(input(f"Cuantas acciones de {Stock} has comrpado a {Buyprice}?\n"))
-        Expense = float(input("Cuanto te han cobrado de gastos de compra?\n"))
-        Index = opcion
-        wallet = dict(
-                        Stock = Stock,
-                        Buyprice = Buyprice,
-                        Qty = Qty,
-                        Expense = Expense,
-                        Index = Index,
-                        AccountCharge = (Buyprice * Qty) + Expense,
-                        Balance = 0
-                    )
-        os.system(borrado)
-        print(f"Añadida la compra de {Qty} acciones de {Stock} por un cargo en cuenta de {wallet['AccountCharge']} euros.")
-        wallet_total.append(wallet)
-    except ValueError:
-            os.system(borrado)
-            print("Valor introducido incorrecto, solo valor numerico.")
-            sleep(5)
-            os.system(borrado)
-            ad_to_wallet(realtime,wallet_total,borrado)
-    except IndexError:
-            os.system(borrado)
-            print(f"El Indice introducido se ha salido del rango, por favor , elije del 0 al {len(realtime)-1}.")
-            sleep(5)
-            os.system(borrado)
-            ad_to_wallet(realtime,wallet_total,borrado)
-    sleep(5)
-    os.system(borrado)
-    menu_principal(realtime,wallet_total,borrado)
+        realtime.append(value)
+    return realtime
 
-def show_tiempo_real(wallet_total,realtime,borrado):
-    
-    while True:
-        realtime = []
-        os.system(borrado)
-        result = urlcontent(url)          
-        scrapurl(result,realtime)
-        df = pd.DataFrame(realtime)
-        print(df)
-        if wallet_total:
-            print('\n'*2)
-            for x in wallet_total:
-                 for y in x:   
-                    if y == "Balance":
-                        for price in realtime:
-                            if price["Stock"] == x["Stock"]:
-                                x["Balance"] = "{} €".format((price["Price"] * x["Qty"]) - x["AccountCharge"])
 
+# Creamos funcion para mostrar el tiempo real.
+
+def show_tiempo_real():
+    result = urlcontent(url)
+    realtime = scrapurl(result)
+    df = pd.DataFrame(realtime)
+
+    if wallet_total:
+        print('\n' * 2)
+        for x in wallet_total:
+            for y in x:
+                if y == "Balance":
+                    for price in realtime:
+                        if price["Stock"] == x["Stock"]:
+                            x["Balance"] = "{} €".format((price["Price"] * x["Qty"]) - x["AccountCharge"])
 
             df1 = pd.DataFrame(wallet_total)
-            print(df1)
-        sleep(5)
+    return df
 
-def wellcome_menu(borrado):
-    print ("\n" + HEADER + "\n" + "-" *len(HEADER) + "\n")
-    type_wallet = input("Como deseas trabajar?\n"
-                            "[A]Importar Wallet.\n"
-                            "[B]Wallet Temporal.\n"
-                            "[Q]Para Salir\n\n")
-    os.system(borrado)
-    while type_wallet != "Q" and type_wallet != "q":
-        
-        if type_wallet == "A" or type_wallet == "a":
-            wallet_total = upload_wallet()
-            return wallet_total
-        if type_wallet == "b" or type_wallet == "B":
-            wallet_total = []
-            return wallet_total
-           
-    print("Hasta la proxima!")
-    exit()   
-    
-def menu_principal(realtime,wallet_total,borrado):
-    os.system(borrado)
-    opcion = input("Elije la opción:\n"
-                   "[A]Añadir a tu cartera.\n"
-                   "[B]Eliminar de tu cartera.\n"
-                   "[C]Tiempo Real.\n"
-                   "[D]Guardar Wallet\n"
-                   )
-    os.system(borrado)
-    if opcion == "A" or opcion == "a":
-        ad_to_wallet(realtime,wallet_total,borrado)
-    if opcion == "B" or opcion == "b":
-        delete_to_wallet(realtime,wallet_total,borrado)
-    if opcion == "C" or opcion == "c":
-        show_tiempo_real(wallet_total,realtime,borrado)    
-    if opcion == "D" or opcion == "d":
-        save_wallet(wallet_total)  
-    
-    return opcion
 
-def delete_to_wallet(realtime,wallet_total,borrado):
-    try:
-        if wallet_total:
-            walletdf = pd.DataFrame(wallet_total)
-            print(walletdf)
-            opcion = int(input("Que movimiento quieres eliminar?\n"))
-            wallet_total.pop(opcion)
-            os.system(borrado)
-            print("Movimiento Eliminado")
-            sleep(5)
-            menu_principal(realtime,wallet_total,borrado)
-        else:
-            print("Tu wallet esta Vacia")
-            sleep(5)
-            menu_principal(realtime,wallet_total,borrado)
-    except ValueError:
-            os.system(borrado)
-            print("Valor introducido incorrecto, solo valor numerico.")
-            sleep(5)
-            os.system(borrado)
-            delete_to_wallet(realtime,wallet_total,borrado)
-    except IndexError:
-            os.system(borrado)
-            print(f"El Indice introducido se ha salido del rango, por favor , elije del 0 al {len(wallet_total)-1}.")
-            sleep(5)
-            os.system(borrado)
-            delete_to_wallet(realtime,wallet_total,borrado)    
+def mostrar_datos_tabulares():
+    df = show_tiempo_real()
+    for item in realtime_tabular.get_children():
+        realtime_tabular.delete(item)
+    columnas = list(df.columns)
+    realtime_tabular['columns'] = columnas
+    print(columnas)
+    # realtime_tabular.delete('#0')
 
-def save_wallet(wallet_total):
-    if wallet_total:
-        df1 = pd.DataFrame(wallet_total)
-        df1.to_csv("wallet.csv")
-        print("Cartera guardada con exito!")
-    else:
-        print("Wallet temporal vacia, imposible generar.")
+    for col in columnas:
+        realtime_tabular.column(col, anchor="center")
+        realtime_tabular.heading(col, text=col)
+    for i, row in df.iterrows():
+        realtime_tabular.insert('', i, values=list(row))
 
-def upload_wallet():
-    try:
-        
-        saved_wallet = pd.read_csv("wallet.csv",index_col=0)
-        wallet_total = saved_wallet.to_dict("records")
-        print("Cartera cargada correctamente!")
-        sleep(5)
-        return wallet_total
-        
-    except:
-        print("No existe un Wallet guardado actualmente.")
-        wallet_total = []
-        sleep(5)
-        return wallet_total
-    
-def main():   
-        borrado = borrado_dep_so()
-        wallet_total = wellcome_menu(borrado)
-        while True:
-            realtime = []
-            result = urlcontent(url)
-            scrapurl(result,realtime)
-            opcion = menu_principal(realtime,wallet_total,borrado)
+    window.after(30000, mostrar_datos_tabulares)
 
-    
 
-if __name__ == "__main__":
-    main()
+mostrar_datos_tabulares()
+
+window.mainloop()
