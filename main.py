@@ -22,7 +22,7 @@ frame_superior = tk.Frame(window)
 
 # Creamos el label.
 cabecera = tk.Label(frame_superior, text=TITLE)
-cabecera.config(font=('Terminal', 20))
+cabecera.config(font=('Terminal', 25))
 cabecera.grid(row=0, column=0)
 
 # Creamos el label para el reloj.
@@ -31,102 +31,39 @@ reloj.grid(row=0, column=1, columnspan=1)
 
 frame_superior.grid(row=0, column=0)
 
-# Creamos un frame para contener los dos botones
-frame_botones = tk.Frame(window)
+# Creamos frame para opciones de compra y venta.
 
+frame_opciones = tk.Frame(window)
+frame_opciones.grid(row=1, column=1)
 
-# Funcion e instancia de objetos entry para abrir popup y creamos Toplevel para compra y venta
+# Creamos opciones dentro de frame.
+opcion_venta = tk.Radiobutton(frame_opciones, text='Venta ', font=('Terminal', 16))
+opcion_venta.pack()
 
+opcion_compra = tk.Radiobutton(frame_opciones, text='Compra ', font=('Terminal', 16))
+opcion_compra.pack()
 
-def abrir_popup_venta():
-    popup = tk.Toplevel(window)
-    popup.geometry('400x300')
-    popup.title(TITLE_POPUP[0])
-    titulo_popup = tk.Label(popup, text='Venta de valores')
-    titulo_popup.config(font=('Terminal', 20))
-    label_indice_valor = tk.Label(popup, text='Introduce el indice del valor')
-    label_cantidad_valor = tk.Label(popup, text='Introduce la cantidad de acciones')
-    label_gastos_venta_valor = tk.Label(popup, text='Introduce la cantidad de gastos de venta')
-    boton_efectuar_venta = tk.Button(popup, text='Confirmar Venta')
+label_stock = tk.Label(frame_opciones, text='Valor: ', font=('Terminal', 16))
+label_info_stock = tk.Label(frame_opciones,
+                            text='*Recuerda que para una venta,\n tienes que poner el indice de tu wallet.',
+                            font=('Terminal', 7))
+label_qty = tk.Label(frame_opciones, text='Cantidad: ', font=('Terminal', 16))
+label_expense = tk.Label(frame_opciones, text='Gastos operacion: ', font=('Terminal', 16))
 
-    entry_indice_valor = tk.Entry(popup)
-    entry_cantidad_venta = tk.Entry(popup)
-    entry_cantidad_gastos = tk.Entry(popup)
+entry_stock = tk.Entry(frame_opciones)
+entry_qty = tk.Entry(frame_opciones)
+entry_expense = tk.Entry(frame_opciones)
 
-    titulo_popup.pack()
+boton_ejecutar = tk.Button(frame_opciones, text='Ejecutar', font=('Terminal', 14))
 
-    label_indice_valor.pack()
-    entry_indice_valor.pack()
-
-    label_cantidad_valor.pack()
-    entry_cantidad_gastos.pack()
-
-    label_gastos_venta_valor.pack()
-    entry_cantidad_venta.pack()
-
-    boton_efectuar_venta.pack()
-
-
-def abrir_popup_compra():
-    result = urlcontent(url)
-    realtime = scrapurl(result)
-
-    popup = tk.Toplevel(window)
-    popup.geometry('400x300')
-    popup.title(TITLE_POPUP[1])
-    titulo_popup = tk.Label(popup, text='Compra de valores')
-    titulo_popup.config(font=('Terminal', 20))
-    label_indice_valor = tk.Label(popup, text='Introduce el indice del valor')
-    label_precio_compra = tk.Label(popup, text='Introduce el precio de compra')
-    label_cantidad_valor = tk.Label(popup, text='Introduce la cantidad de acciones')
-    label_gastos_compra_valor = tk.Label(popup, text='Introduce la cantidad de gastos de compra')
-
-    entry_indice_valor = tk.Entry(popup)
-    entry_precio_compra = tk.Entry(popup)
-    entry_cantidad_compra = tk.Entry(popup)
-    entry_cantidad_gastos = tk.Entry(popup)
-
-    titulo_popup.pack()
-
-    label_indice_valor.pack()
-    entry_indice_valor.pack()
-
-    label_precio_compra.pack()
-    entry_precio_compra.pack()
-
-    label_cantidad_valor.pack()
-    entry_cantidad_gastos.pack()
-
-    label_gastos_compra_valor.pack()
-    entry_cantidad_compra.pack()
-
-    def efectuar_compra(realtime):
-        realtime = scrapurl(result)
-        compra = csv_manager.Stock(
-            realtime[entry_indice_valor.get()]['Stock'],
-            float(entry_precio_compra.get()),
-            int(entry_cantidad_compra.get()),
-            float(entry_cantidad_gastos.get()),
-            int(entry_indice_valor.get())
-        )
-
-        wallet_total.append(compra)
-
-    boton_efectuar_compra = tk.Button(popup, text='Confirmar compra', command=efectuar_compra)
-    boton_efectuar_compra.pack()
-
-
-# Creamos los botones de Compra y Venta
-
-boton_compra = tk.Button(frame_botones, text='Añadir compra', command=abrir_popup_compra)
-boton_compra.config(bg='red', font=('Terminal', 12))
-boton_venta = tk.Button(frame_botones, text='Vender Acciones', command=abrir_popup_venta)
-boton_venta.config(bg='green', font=('Terminal', 12))
-
-boton_compra.pack()
-boton_venta.pack()
-frame_botones.grid(row=1, column=1)
-
+label_stock.pack(padx=10, pady=5)
+entry_stock.pack(padx=10, pady=5)
+label_info_stock.pack()
+label_qty.pack(padx=10, pady=5)
+entry_qty.pack(padx=10, pady=5)
+label_expense.pack(padx=10, pady=5)
+entry_expense.pack(padx=10, pady=5)
+boton_ejecutar.pack(padx=10, pady=5)
 # Creamos tabla.
 
 realtime_tabular = ttk.Treeview(window, height=35)
@@ -136,7 +73,7 @@ realtime_tabular.grid(row=1, column=0)
 
 # Funcion para reloj en pantalla
 def actualizar_hora():
-    reloj.config(text=time.strftime('%H:%M:%S'), font=('Terminal', 20))
+    reloj.config(text=time.strftime('%H:%M:%S'), font=('Terminal', 25))
     window.after(1000, actualizar_hora)
 
 
@@ -236,8 +173,7 @@ def mostrar_datos_tabulares():
         realtime_tabular.delete(item)
     columnas = list(df.columns)
     realtime_tabular['columns'] = columnas
-    print(columnas)
-    # realtime_tabular.delete('#0')
+    # print(columnas)
 
     for col in columnas:
         realtime_tabular.column(col, anchor="center")
