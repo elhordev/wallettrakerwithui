@@ -36,11 +36,26 @@ frame_superior.grid(row=0, column=0)
 frame_opciones = tk.Frame(window)
 frame_opciones.grid(row=1, column=1)
 
+# Variable de control para los Radiobutton de las opciones.
+
+opcion = tk.StringVar()
+
+
+# Funcion para cambiar color boton
+def color_boton():
+    if opcion.get() == 'compra':
+        boton_ejecutar.config(bg='red')
+    elif opcion.get() == 'venta':
+        boton_ejecutar.config(bg='green')
+
+
 # Creamos opciones dentro de frame.
-opcion_venta = tk.Radiobutton(frame_opciones, text='Venta ', font=('Terminal', 16))
+opcion_venta = tk.Radiobutton(frame_opciones, text='Venta ', font=('Terminal', 16), variable=opcion, value='venta'
+                              , command=color_boton)
 opcion_venta.pack()
 
-opcion_compra = tk.Radiobutton(frame_opciones, text='Compra ', font=('Terminal', 16))
+opcion_compra = tk.Radiobutton(frame_opciones, text='Compra ', font=('Terminal', 16), variable=opcion, value='compra'
+                               , command=color_boton)
 opcion_compra.pack()
 
 label_stock = tk.Label(frame_opciones, text='Valor: ', font=('Terminal', 16))
@@ -54,8 +69,7 @@ entry_stock = tk.Entry(frame_opciones)
 entry_qty = tk.Entry(frame_opciones)
 entry_expense = tk.Entry(frame_opciones)
 
-boton_ejecutar = tk.Button(frame_opciones, text='Ejecutar', font=('Terminal', 14))
-
+boton_ejecutar = tk.Button(frame_opciones, text='Ejecutar', font=('Terminal', 14), bg='green')
 label_stock.pack(padx=10, pady=5)
 entry_stock.pack(padx=10, pady=5)
 label_info_stock.pack()
@@ -64,12 +78,22 @@ entry_qty.pack(padx=10, pady=5)
 label_expense.pack(padx=10, pady=5)
 entry_expense.pack(padx=10, pady=5)
 boton_ejecutar.pack(padx=10, pady=5)
+
 # Creamos tabla.
 
 realtime_tabular = ttk.Treeview(window, height=35)
 
 realtime_tabular.grid(row=1, column=0)
 
+# Creamos tabla de wallet.
+
+wallet_tabular = ttk.Treeview(window, height=35)
+
+wallet_tabular.grid(row=3, column=0)
+
+# Label wallet
+label_wallet = tk.Label(text='Wallet Personal', font=('Terminal', 20))
+label_wallet.grid(row=2, column=0)
 
 # Funcion para reloj en pantalla
 def actualizar_hora():
@@ -173,7 +197,6 @@ def mostrar_datos_tabulares():
         realtime_tabular.delete(item)
     columnas = list(df.columns)
     realtime_tabular['columns'] = columnas
-    # print(columnas)
 
     for col in columnas:
         realtime_tabular.column(col, anchor="center")
