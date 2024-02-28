@@ -6,6 +6,8 @@ import time
 from tkinter import ttk
 import csv_manager
 
+realtime = []
+
 TITLE = "Wellcome to wallettraker v.berza by elhorDev"
 url = "https://www.productoscotizados.com/mercado/ibex-35"
 wallet_total = []
@@ -39,17 +41,41 @@ frame_opciones.grid(row=1, column=1)
 # Variable de control para los Radiobutton de las opciones.
 
 opcion = tk.StringVar()
+opcion_tobin = tk.BooleanVar()
+
+# Funcion para añadir compra
+'''def aniadir_compra():
+    compra = csv_manager.Stock(stock=int(realtime[entry_stock.get()]['Stock']),
+                               buyprice=float(entry_price.get()),
+                               qty=int(entry_qty.get()),
+                               expense=float(entry_expense.get()),
+                               index=int(entry_stock.get()))
+
+    if opcion_tobin.get():
+        compra.calcular_tobin()
+
+    wallet_total.append(compra)
+    print(wallet_total)
+
+'''
+
+
+def debug():
+    indice = entry_stock.get()
+    print(realtime)
 
 
 # Funcion para cambiar color boton
 def color_boton():
     if opcion.get() == 'compra':
         boton_ejecutar.config(bg='red')
+        # print(realtime)
     elif opcion.get() == 'venta':
         boton_ejecutar.config(bg='green')
 
 
 # Creamos opciones dentro de frame.
+opcion_radio_tobin = tk.Checkbutton(frame_opciones, text='Tobin', font=('Terminal', 16), variable=opcion_tobin)
 opcion_venta = tk.Radiobutton(frame_opciones, text='Venta ', font=('Terminal', 16), variable=opcion, value='venta'
                               , command=color_boton)
 opcion_venta.pack()
@@ -64,19 +90,30 @@ label_info_stock = tk.Label(frame_opciones,
                             font=('Terminal', 7))
 label_qty = tk.Label(frame_opciones, text='Cantidad: ', font=('Terminal', 16))
 label_expense = tk.Label(frame_opciones, text='Gastos operacion: ', font=('Terminal', 16))
-
+label_price = tk.Label(frame_opciones, text='Precio valor: ', font=('Terminal', 16))
 entry_stock = tk.Entry(frame_opciones)
 entry_qty = tk.Entry(frame_opciones)
 entry_expense = tk.Entry(frame_opciones)
+entry_price = tk.Entry(frame_opciones)
 
-boton_ejecutar = tk.Button(frame_opciones, text='Ejecutar', font=('Terminal', 14), bg='green')
+boton_ejecutar = tk.Button(frame_opciones, text='Ejecutar', font=('Terminal', 14), bg='green',
+                           command=debug)
+
 label_stock.pack(padx=10, pady=5)
 entry_stock.pack(padx=10, pady=5)
 label_info_stock.pack()
+
+label_price.pack(padx=10, pady=5)
+entry_price.pack(padx=10, pady=5)
+
 label_qty.pack(padx=10, pady=5)
 entry_qty.pack(padx=10, pady=5)
+
 label_expense.pack(padx=10, pady=5)
 entry_expense.pack(padx=10, pady=5)
+
+opcion_radio_tobin.pack(padx=10, pady=5)
+
 boton_ejecutar.pack(padx=10, pady=5)
 
 # Creamos tabla.
@@ -94,6 +131,7 @@ wallet_tabular.grid(row=3, column=0)
 # Label wallet
 label_wallet = tk.Label(text='Wallet Personal', font=('Terminal', 20))
 label_wallet.grid(row=2, column=0)
+
 
 # Funcion para reloj en pantalla
 def actualizar_hora():
@@ -174,6 +212,8 @@ def scrapurl(result):
 # Creamos funcion para mostrar el tiempo real.
 
 def show_tiempo_real():
+    global realtime
+
     result = urlcontent(url)
     realtime = scrapurl(result)
     df = pd.DataFrame(realtime)
