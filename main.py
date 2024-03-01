@@ -8,7 +8,7 @@ import csv_manager
 
 realtime = []
 
-TITLE = "Wellcome to wallettraker v.berza by elhorDev"
+TITLE = "Wellcome to wallettraker v.0.1 by elhorDev"
 url = "https://www.productoscotizados.com/mercado/ibex-35"
 wallet_total = []
 TITLE_POPUP = ['Venta de acciones', 'Compra de acciones']
@@ -43,26 +43,33 @@ frame_opciones.grid(row=1, column=1)
 opcion = tk.StringVar()
 opcion_tobin = tk.BooleanVar()
 
+# Variables de control
+
+control_opcion = tk.IntVar()
+control_qty = tk.IntVar()
+control_expense = tk.DoubleVar()
+control_price = tk.DoubleVar()
+control_index = tk.IntVar()
+
+
 # Funcion para añadir compra
-'''def aniadir_compra():
-    compra = csv_manager.Stock(stock=int(realtime[entry_stock.get()]['Stock']),
-                               buyprice=float(entry_price.get()),
-                               qty=int(entry_qty.get()),
-                               expense=float(entry_expense.get()),
-                               index=int(entry_stock.get()))
+def aniadir_compra():
+    compra = csv_manager.Stock(stock=realtime[control_opcion.get()]['Stock'],
+                               buyprice=control_price.get(),
+                               qty=control_qty.get(),
+                               expense=control_expense.get(),
+                               index=control_index.get())
 
     if opcion_tobin.get():
         compra.calcular_tobin()
 
     wallet_total.append(compra)
-    print(wallet_total)
-
-'''
+    print(wallet_total[0].stock)
 
 
-def debug():
+'''def debug():
     indice = entry_stock.get()
-    print(realtime)
+    print(type(indice)'''
 
 
 # Funcion para cambiar color boton
@@ -91,13 +98,14 @@ label_info_stock = tk.Label(frame_opciones,
 label_qty = tk.Label(frame_opciones, text='Cantidad: ', font=('Terminal', 16))
 label_expense = tk.Label(frame_opciones, text='Gastos operacion: ', font=('Terminal', 16))
 label_price = tk.Label(frame_opciones, text='Precio valor: ', font=('Terminal', 16))
-entry_stock = tk.Entry(frame_opciones)
-entry_qty = tk.Entry(frame_opciones)
-entry_expense = tk.Entry(frame_opciones)
-entry_price = tk.Entry(frame_opciones)
+
+entry_stock = tk.Entry(frame_opciones, textvariable=control_opcion)
+entry_qty = tk.Entry(frame_opciones, textvariable=control_qty)
+entry_expense = tk.Entry(frame_opciones, textvariable=control_expense)
+entry_price = tk.Entry(frame_opciones, textvariable=control_price)
 
 boton_ejecutar = tk.Button(frame_opciones, text='Ejecutar', font=('Terminal', 14), bg='green',
-                           command=debug)
+                           command=aniadir_compra)
 
 label_stock.pack(padx=10, pady=5)
 entry_stock.pack(padx=10, pady=5)
@@ -126,10 +134,12 @@ realtime_tabular.grid(row=1, column=0)
 
 wallet_tabular = ttk.Treeview(window, height=35)
 
+wallet_tabular.configure(columns=('Stock', 'BuyPrice', 'QTY', 'Expense', 'AccCharge', 'Balance', 'Tobin'))
 wallet_tabular.grid(row=3, column=0)
 
 # Label wallet
 label_wallet = tk.Label(text='Wallet Personal', font=('Terminal', 20))
+
 label_wallet.grid(row=2, column=0)
 
 
@@ -218,7 +228,7 @@ def show_tiempo_real():
     realtime = scrapurl(result)
     df = pd.DataFrame(realtime)
 
-    if wallet_total:
+    '''if wallet_total:
         print('\n' * 2)
         for x in wallet_total:
             for y in x:
@@ -227,7 +237,7 @@ def show_tiempo_real():
                         if price["Stock"] == x["Stock"]:
                             x["Balance"] = "{} €".format((price["Price"] * x["Qty"]) - x["AccountCharge"])
 
-            df1 = pd.DataFrame(wallet_total)
+            df1 = pd.DataFrame(wallet_total)'''
     return df
 
 
@@ -247,6 +257,17 @@ def mostrar_datos_tabulares():
     window.after(30000, mostrar_datos_tabulares)
 
 
+def mostrar_datos_tabulares_wallet():
+    for item in wallet_tabular.get_children():
+        wallet_tabular.delete(item)
+
+    for item in wallet_total:
+        wallet_tabular.insert('', 'end', values=(item.stock, item.buyprice, item.qty, item.expense
+                                                 , item.accountcharge, item.balance, item.tobin))
+    window.after(30000, mostrar_datos_tabulares_wallet)
+
+
 mostrar_datos_tabulares()
 
+mostrar_datos_tabulares_wallet()
 window.mainloop()
