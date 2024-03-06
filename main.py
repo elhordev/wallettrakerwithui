@@ -1,3 +1,5 @@
+global imagen_tk
+
 import tkinter as tk
 import requests
 from bs4 import BeautifulSoup
@@ -5,6 +7,8 @@ import pandas as pd
 import time
 from tkinter import ttk
 import csv_manager
+from PIL import Image, ImageTk
+import os  # Solo para debug y comprobacion de PATH
 
 realtime = []
 
@@ -12,12 +16,39 @@ TITLE = "Wellcome to wallettraker v.0.1 by elhorDev"
 url = "https://www.productoscotizados.com/mercado/ibex-35"
 wallet_total = []
 TITLE_POPUP = ['Venta de acciones', 'Compra de acciones']
+path_error_img = 'peligro.png'
 
 # Configuracion de la ventana Root.
 window = tk.Tk()
 window.title('WallettrakerUI by elhor')
 window.geometry('1920x1080')
 window.resizable(False, False)
+
+
+# Popup para gestionar las excepciones de los entry.
+def mostrar_popup_error():
+    popup_error_entry = tk.Toplevel(window)
+    popup_error_entry.title('Error')
+    popup_error_entry.geometry('600x450')
+
+    if os.path.exists(path_error_img):
+        imagen = Image.open(path_error_img)
+        global imagen_tk
+        imagen_tk = ImageTk.PhotoImage(imagen)
+        label_imagen = tk.Label(popup_error_entry, image=imagen_tk, anchor=tk.CENTER)
+        label_imagen.pack()
+    else:
+        print("Error: Image file 'imagen.png' not found.")
+    label_error = tk.Label(popup_error_entry,
+                           text='\n\nError al Introducir datos, recuerda que:\n\n-Valor son enteros.\n\n- Cantidad son '
+                                'enteros.\n\n- Gastos pueden ser decimales, usando el punto.\n\n- Precio igual que '
+                                'gastos.\n\n')
+    label_error.config(font=('Terminal', 15))
+    label_error.pack()
+
+    boton_cerrar = tk.Button(popup_error_entry, text='Entendido', command=popup_error_entry.destroy)
+    boton_cerrar.pack()
+
 
 # Creamos frame para el label y el reloj
 frame_superior = tk.Frame(window)
@@ -54,17 +85,21 @@ control_index = tk.IntVar()
 
 # Funcion para añadir compra
 def aniadir_compra():
-    compra = csv_manager.Stock(stock=realtime[control_opcion.get()]['Stock'],
-                               buyprice=control_price.get(),
-                               qty=control_qty.get(),
-                               expense=control_expense.get(),
-                               index=control_index.get())
+    try:
+        compra = csv_manager.Stock(stock=realtime[control_opcion.get()]['Stock'],
+                                   buyprice=control_price.get(),
+                                   qty=control_qty.get(),
+                                   expense=control_expense.get(),
+                                   index=control_index.get(),
+                                   tobin =opcion_tobin.get())
 
-    if opcion_tobin.get():
-        compra.calcular_tobin()
+        if opcion_tobin.get():
+            compra.calcular_tobin()
 
-    wallet_total.append(compra)
-    print(wallet_total[0].stock)
+        wallet_total.append(compra)
+        print(wallet_total[0].stock)
+    except tk.TclError:
+        mostrar_popup_error()
 
 
 '''def debug():
@@ -262,6 +297,10 @@ def mostrar_datos_tabulares_wallet():
         wallet_tabular.delete(item)
 
     for item in wallet_total:
+        
+        if item.tobin:
+            item.calcular_tobin()
+
         wallet_tabular.insert('', 'end', values=(item.stock, item.buyprice, item.qty, item.expense
                                                  , item.accountcharge, item.balance, item.tobin))
     window.after(30000, mostrar_datos_tabulares_wallet)
