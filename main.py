@@ -1,5 +1,3 @@
-global imagen_tk
-
 import tkinter as tk
 import requests
 from bs4 import BeautifulSoup
@@ -9,6 +7,8 @@ from tkinter import ttk
 import csv_manager
 from PIL import Image, ImageTk
 import os  # Solo para debug y comprobacion de PATH
+
+global imagen_tk
 
 realtime = []
 
@@ -82,6 +82,14 @@ control_expense = tk.DoubleVar()
 control_price = tk.DoubleVar()
 control_index = tk.IntVar()
 
+# Creamos un tk.scale para controlar la actualizacion.
+label_slide = tk.Label(frame_opciones, text='Frecuencia de actualizacion', font=('Terminal', 10))
+label_bajo_slide = tk.Label(frame_opciones, text='Segundos', font=('Terminal', 8))
+slide = tk.Scale(frame_opciones, from_=3, to=10, orient='horizontal', resolution=1)
+
+freq_actualizacion_var_control = tk.IntVar()
+freq_actualizacion = freq_actualizacion_var_control.get()
+
 
 # Funcion para añadir compra
 def aniadir_compra():
@@ -91,7 +99,7 @@ def aniadir_compra():
                                    qty=control_qty.get(),
                                    expense=control_expense.get(),
                                    index=control_index.get(),
-                                   tobin =opcion_tobin.get())
+                                   tobin=opcion_tobin.get())
 
         if opcion_tobin.get():
             compra.calcular_tobin()
@@ -159,6 +167,9 @@ opcion_radio_tobin.pack(padx=10, pady=5)
 
 boton_ejecutar.pack(padx=10, pady=5)
 
+label_slide.pack()
+slide.pack()
+label_bajo_slide.pack()
 # Creamos tabla.
 
 realtime_tabular = ttk.Treeview(window, height=35)
@@ -289,21 +300,22 @@ def mostrar_datos_tabulares():
     for i, row in df.iterrows():
         realtime_tabular.insert('', i, values=list(row))
 
-    window.after(30000, mostrar_datos_tabulares)
+    window.after(freq_actualizacion, mostrar_datos_tabulares)
 
 
 def mostrar_datos_tabulares_wallet():
     for item in wallet_tabular.get_children():
         wallet_tabular.delete(item)
+    if wallet_total:
 
-    for item in wallet_total:
-        
-        if item.tobin:
-            item.calcular_tobin()
+        for compra in wallet_total:
+            for accion in realtime:
+                if accion['Stock'] == compra.stock:
+                    compra.balance = '{}€'.format(round((accion['Price'] * compra.qty) - compra.accountcharge), 2)
 
-        wallet_tabular.insert('', 'end', values=(item.stock, item.buyprice, item.qty, item.expense
-                                                 , item.accountcharge, item.balance, item.tobin))
-    window.after(30000, mostrar_datos_tabulares_wallet)
+            wallet_tabular.insert('', 'end', values=(compra.stock, compra.buyprice, compra.qty, compra.expense
+                                                     , compra.accountcharge, compra.balance, compra.tobin))
+    window.after(freq_actualizacion, mostrar_datos_tabulares_wallet)
 
 
 mostrar_datos_tabulares()
