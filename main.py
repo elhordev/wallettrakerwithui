@@ -83,12 +83,19 @@ control_price = tk.DoubleVar()
 control_index = tk.IntVar()
 
 # Creamos un tk.scale para controlar la actualizacion.
-label_slide = tk.Label(frame_opciones, text='Frecuencia de actualizacion', font=('Terminal', 10))
-label_bajo_slide = tk.Label(frame_opciones, text='Segundos', font=('Terminal', 8))
-slide = tk.Scale(frame_opciones, from_=3, to=10, orient='horizontal', resolution=1)
 
-freq_actualizacion_var_control = tk.IntVar()
-freq_actualizacion = freq_actualizacion_var_control.get()
+freq_actualizacion_var_control = tk.IntVar(value=10)
+
+
+def control_freq_actualizacion(nuevo_valor):
+    freq_actualizacion_var_control.set(nuevo_valor)
+    print(freq_actualizacion_var_control.get())
+
+
+label_slide = tk.Label(frame_opciones, text='\n\nFrecuencia de actualizacion', font=('Terminal', 10))
+label_bajo_slide = tk.Label(frame_opciones, text='Segundos', font=('Terminal', 8))
+slide = tk.Scale(frame_opciones, from_=3, to=20, orient='horizontal', resolution=1,
+                 variable=freq_actualizacion_var_control, command=control_freq_actualizacion, sliderlength=10)
 
 
 # Funcion para añadir compra
@@ -299,8 +306,8 @@ def mostrar_datos_tabulares():
         realtime_tabular.heading(col, text=col)
     for i, row in df.iterrows():
         realtime_tabular.insert('', i, values=list(row))
-
-    window.after(freq_actualizacion, mostrar_datos_tabulares)
+    print('Actualizando tiempo real cada {} segundos'.format(freq_actualizacion_var_control.get()))
+    window.after(freq_actualizacion_var_control.get() * 1000, mostrar_datos_tabulares)
 
 
 def mostrar_datos_tabulares_wallet():
@@ -315,7 +322,8 @@ def mostrar_datos_tabulares_wallet():
 
             wallet_tabular.insert('', 'end', values=(compra.stock, compra.buyprice, compra.qty, compra.expense
                                                      , compra.accountcharge, compra.balance, compra.tobin))
-    window.after(freq_actualizacion, mostrar_datos_tabulares_wallet)
+            print('Actualizando wallet cada {} segundos'.format(freq_actualizacion_var_control.get()))
+    window.after(freq_actualizacion_var_control.get() * 1000, mostrar_datos_tabulares_wallet)
 
 
 mostrar_datos_tabulares()
