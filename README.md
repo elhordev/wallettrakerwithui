@@ -51,5 +51,6 @@ Este proyecto no tiene licencia.
 **Nota:**
 
 Este proyecto es solo para fines de práctica y formación.
-
+![Mihermanotenergrancabesa](assets/Captura0.png)
+![Supercabesa](assets/Captura1.png)
 
