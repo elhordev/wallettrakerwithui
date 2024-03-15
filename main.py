@@ -12,7 +12,7 @@ global imagen_tk
 
 realtime = []
 
-TITLE = "Wellcome to wallettraker v.0.1 by elhorDev"
+TITLE = "Wellcome to wallettraker v.1.0 by elhorDev"
 url = "https://www.productoscotizados.com/mercado/ibex-35"
 wallet_total = []
 TITLE_POPUP = ['Venta de acciones', 'Compra de acciones']
@@ -50,6 +50,30 @@ def mostrar_popup_error():
     boton_cerrar.pack()
 
 
+def mostrar_pop_up_venta():
+    pop_up_venta = tk.Toplevel(window)
+    pop_up_venta.title('Venta')
+    pop_up_venta.geometry('250x80')
+
+    label_venta = tk.Label(pop_up_venta, text='Venta producida con exito\n')
+    boton_cerrar = tk.Button(pop_up_venta, text='Cerrar', command=pop_up_venta.destroy)
+
+    label_venta.pack()
+    boton_cerrar.pack()
+
+
+def mostrar_pop_up_compra():
+    pop_up_compra = tk.Toplevel(window)
+    pop_up_compra.title('Compra')
+    pop_up_compra.geometry('250x80')
+
+    label_compra = tk.Label(pop_up_compra, text='Compra producida con exito\n')
+    boton_cerrar = tk.Button(pop_up_compra, text='Cerrar', command=pop_up_compra.destroy)
+
+    label_compra.pack()
+    boton_cerrar.pack()
+
+
 # Creamos frame para el label y el reloj
 frame_superior = tk.Frame(window)
 
@@ -71,7 +95,7 @@ frame_opciones.grid(row=1, column=1)
 
 # Variable de control para los Radiobutton de las opciones.
 
-opcion = tk.StringVar()
+opcion = tk.StringVar(value='venta')
 opcion_tobin = tk.BooleanVar()
 
 # Variables de control
@@ -112,8 +136,18 @@ def aniadir_compra():
             compra.calcular_tobin()
 
         wallet_total.append(compra)
+        mostrar_pop_up_compra()
         print(wallet_total[0].stock)
     except tk.TclError:
+        mostrar_popup_error()
+
+
+def aniadir_venta():
+    try:
+        delete_wallet = control_opcion.get()
+        wallet_total.pop(delete_wallet)
+        mostrar_pop_up_venta()
+    except IndexError:
         mostrar_popup_error()
 
 
@@ -122,13 +156,21 @@ def aniadir_compra():
     print(type(indice)'''
 
 
-# Funcion para cambiar color boton
+# Funcion para cambiar color boton y habilitar o deshabilitar la entrada de los entry y configurar en boton
+# con el command de venta o de compra
 def color_boton():
-    if opcion.get() == 'compra':
-        boton_ejecutar.config(bg='red')
+    if opcion.get() == 'venta':
+        boton_ejecutar.config(bg='green', command=aniadir_venta)
+        entry_qty.config(state='disabled')
+        entry_price.config(state='disabled')
+        entry_expense.config(state='disabled')
+
         # print(realtime)
-    elif opcion.get() == 'venta':
-        boton_ejecutar.config(bg='green')
+    elif opcion.get() == 'compra':
+        boton_ejecutar.config(bg='red', command=aniadir_compra)
+        entry_qty.config(state='normal')
+        entry_price.config(state='normal')
+        entry_expense.config(state='normal')
 
 
 # Creamos opciones dentro de frame.
@@ -177,6 +219,10 @@ boton_ejecutar.pack(padx=10, pady=5)
 label_slide.pack()
 slide.pack()
 label_bajo_slide.pack()
+
+# Checkeamos botones y opciones
+color_boton()
+
 # Creamos tabla.
 
 realtime_tabular = ttk.Treeview(window, height=35)
@@ -187,7 +233,6 @@ realtime_tabular.grid(row=1, column=0)
 
 wallet_tabular = ttk.Treeview(window, height=35)
 
-wallet_tabular.configure(columns=('Stock', 'BuyPrice', 'QTY', 'Expense', 'AccCharge', 'Balance', 'Tobin'))
 wallet_tabular.grid(row=3, column=0)
 
 # Label wallet
@@ -311,17 +356,26 @@ def mostrar_datos_tabulares():
 
 
 def mostrar_datos_tabulares_wallet():
+    index_wallet = -1
     for item in wallet_tabular.get_children():
         wallet_tabular.delete(item)
     if wallet_total:
+        columns = ['Index', 'Stock', 'QTY', 'Expense', 'AccCharge', 'Balance', 'Tobin']
+        wallet_tabular['columns'] = columns
+        for col in columns:
+            wallet_tabular.column(col, anchor='center')
+            wallet_tabular.heading(col, text=col)
 
         for compra in wallet_total:
+            index_wallet += 1
+            compra.index = index_wallet
             for accion in realtime:
                 if accion['Stock'] == compra.stock:
                     compra.balance = '{}€'.format(round((accion['Price'] * compra.qty) - compra.accountcharge), 2)
 
-            wallet_tabular.insert('', 'end', values=(compra.stock, compra.buyprice, compra.qty, compra.expense
-                                                     , compra.accountcharge, compra.balance, compra.tobin))
+            wallet_tabular.insert('', 'end', values=(compra.index, compra.stock, compra.qty,
+                                                     compra.expense, compra.accountcharge, compra.balance,
+                                                     compra.tobin))
             print('Actualizando wallet cada {} segundos'.format(freq_actualizacion_var_control.get()))
     window.after(freq_actualizacion_var_control.get() * 1000, mostrar_datos_tabulares_wallet)
 
