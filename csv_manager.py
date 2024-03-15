@@ -12,7 +12,7 @@ class Stock:
 
     def calcular_tobin(self):
         if self.tobin:
-            self.tobin = round(self.accountcharge * 0.002, 2)
+            self.tobin = f'{round(self.accountcharge * 0.002, 2)}€'
 
 
 '''compra = Stock('pepe',3.2,3000,3.6,2,False)

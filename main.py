@@ -12,7 +12,7 @@ global imagen_tk
 
 realtime = []
 
-TITLE = "Wellcome to wallettraker v.1.0 by elhorDev"
+TITLE = "Wallettraker v.1.0 by elhorDev\t\t\t\t\t"
 url = "https://www.productoscotizados.com/mercado/ibex-35"
 wallet_total = []
 TITLE_POPUP = ['Venta de acciones', 'Compra de acciones']
@@ -243,7 +243,7 @@ label_wallet.grid(row=2, column=0)
 
 # Funcion para reloj en pantalla
 def actualizar_hora():
-    reloj.config(text=time.strftime('%H:%M:%S'), font=('Terminal', 25))
+    reloj.config(text=time.strftime('\t%H:%M:%S'), font=('Terminal', 25))
     window.after(1000, actualizar_hora)
 
 
@@ -251,7 +251,7 @@ actualizar_hora()
 
 
 # Creamos funcion para descarga de pagina a scrapear.
-def urlcontent(url):
+def urlcontent():
     result = requests.get(url)
     return result
 
@@ -322,7 +322,7 @@ def scrapurl(result):
 def show_tiempo_real():
     global realtime
 
-    result = urlcontent(url)
+    result = urlcontent()
     realtime = scrapurl(result)
     df = pd.DataFrame(realtime)
 
