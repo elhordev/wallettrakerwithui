@@ -16,6 +16,7 @@
     * BeautifulSoup4
     * Time
     * CSV Manager
+    * Image, ImageTk from PIL
 
 **Requisitos:**
 
