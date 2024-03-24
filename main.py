@@ -16,13 +16,28 @@ TITLE = "Wallettraker v.1.0 by elhorDev\t\t\t\t\t"
 url = "https://www.productoscotizados.com/mercado/ibex-35"
 wallet_total = []
 TITLE_POPUP = ['Venta de acciones', 'Compra de acciones']
-path_error_img = 'peligro.png'
+path_error_img = 'assets/peligro.png'
 
 # Configuracion de la ventana Root.
 window = tk.Tk()
 window.title('WallettrakerUI by elhor')
 window.geometry('1920x1080')
 window.resizable(False, False)
+# Crear la barra de menu
+barra_menu = tk.Menu(window)
+
+# Creamos menu archivo
+
+archivo_menu = tk.Menu(barra_menu, tearoff=False)
+archivo_menu.add_command(label='Cargar cartera')
+archivo_menu.add_command(label='Guardar cartera')
+archivo_menu.add_separator()
+archivo_menu.add_command(label='Salir',command=window.quit)
+# Agregar el menu archivo a la barra_menu
+
+barra_menu.add_cascade(label='Archivo', menu= archivo_menu)
+
+window.config(menu=barra_menu)
 
 
 # Popup para gestionar las excepciones de los entry.
@@ -137,7 +152,7 @@ def aniadir_compra():
 
         wallet_total.append(compra)
         mostrar_pop_up_compra()
-        print(wallet_total[0].stock)
+
     except tk.TclError:
         mostrar_popup_error()
 
