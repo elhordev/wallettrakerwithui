@@ -14,6 +14,12 @@ class Stock:
         if self.tobin:
             self.tobin = f'{round(self.accountcharge * 0.002, 2)}€'
 
+    def cargar_cartera(self):
+        pass
+
+    def guardar_cartera(self):
+        pass
+
 
 '''compra = Stock('pepe',3.2,3000,3.6,2,False)
 compra.tobin = True

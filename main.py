@@ -1,43 +1,58 @@
-import tkinter as tk
-import requests
-from bs4 import BeautifulSoup
-import pandas as pd
-import time
-from tkinter import ttk
-import csv_manager
-from PIL import Image, ImageTk
 import os  # Solo para debug y comprobacion de PATH
+import time
+import tkinter as tk
+from tkinter import ttk
+
+import pandas as pd
+from PIL import Image, ImageTk
+
+import constants
+import csv_manager
+import functions
 
 global imagen_tk
 
 realtime = []
 
-TITLE = "Wallettraker v.1.0 by elhorDev\t\t\t\t\t"
-url = "https://www.productoscotizados.com/mercado/ibex-35"
-wallet_total = []
-TITLE_POPUP = ['Venta de acciones', 'Compra de acciones']
-path_error_img = 'assets/peligro.png'
 
-# Configuracion de la ventana Root.
-window = tk.Tk()
-window.title('WallettrakerUI by elhor')
-window.geometry('1920x1080')
-window.resizable(False, False)
-# Crear la barra de menu
-barra_menu = tk.Menu(window)
+# Funcion para añadir compra
+def aniadir_compra():
+    try:
+        compra = csv_manager.Stock(stock=realtime[control_opcion.get()]['Stock'],
+                                   buyprice=control_price.get(),
+                                   qty=control_qty.get(),
+                                   expense=control_expense.get(),
+                                   index=control_index.get(),
+                                   tobin=opcion_tobin.get())
 
-# Creamos menu archivo
+        if opcion_tobin.get():
+            compra.calcular_tobin()
 
-archivo_menu = tk.Menu(barra_menu, tearoff=False)
-archivo_menu.add_command(label='Cargar cartera')
-archivo_menu.add_command(label='Guardar cartera')
-archivo_menu.add_separator()
-archivo_menu.add_command(label='Salir',command=window.quit)
-# Agregar el menu archivo a la barra_menu
+        constants.WALLET_TOTAL.append(compra)
+        mostrar_pop_up_compra()
 
-barra_menu.add_cascade(label='Archivo', menu= archivo_menu)
+    except tk.TclError:
+        mostrar_popup_error()
 
-window.config(menu=barra_menu)
+
+def aniadir_venta():
+    try:
+        delete_wallet = control_opcion.get()
+        constants.WALLET_TOTAL.pop(delete_wallet)
+        mostrar_pop_up_venta()
+    except IndexError:
+        mostrar_popup_error()
+
+
+'''def debug():
+    indice = entry_stock.get()
+    print(type(indice)'''
+
+
+# Funcion para reloj en pantalla
+def actualizar_hora():
+    reloj.config(text=time.strftime('\t%H:%M:%S'), font=('Terminal', 25))
+    window.after(1000, actualizar_hora)
 
 
 # Popup para gestionar las excepciones de los entry.
@@ -46,8 +61,8 @@ def mostrar_popup_error():
     popup_error_entry.title('Error')
     popup_error_entry.geometry('600x450')
 
-    if os.path.exists(path_error_img):
-        imagen = Image.open(path_error_img)
+    if os.path.exists(constants.PATH_ERROR_IMG):
+        imagen = Image.open(constants.PATH_ERROR_IMG)
         global imagen_tk
         imagen_tk = ImageTk.PhotoImage(imagen)
         label_imagen = tk.Label(popup_error_entry, image=imagen_tk, anchor=tk.CENTER)
@@ -89,11 +104,107 @@ def mostrar_pop_up_compra():
     boton_cerrar.pack()
 
 
+# Funcion para cambiar color boton y habilitar o deshabilitar la entrada de los entry y configurar en boton
+# con el command de venta o de compra
+def color_boton():
+    if opcion.get() == 'venta':
+        boton_ejecutar.config(bg='green', command=aniadir_venta)
+        entry_qty.config(state='disabled')
+        entry_price.config(state='disabled')
+        entry_expense.config(state='disabled')
+        opcion_radio_tobin.config(state='disabled')
+        # print(realtime)
+    elif opcion.get() == 'compra':
+        boton_ejecutar.config(bg='red', command=aniadir_compra)
+        entry_qty.config(state='normal')
+        entry_price.config(state='normal')
+        entry_expense.config(state='normal')
+        opcion_radio_tobin.config(state='normal')
+
+
+def mostrar_datos_tabulares():
+    df = show_tiempo_real()
+    for item in realtime_tabular.get_children():
+        realtime_tabular.delete(item)
+    columnas = list(df.columns)
+    realtime_tabular['columns'] = columnas
+
+    for col in columnas:
+        realtime_tabular.column(col, anchor="center")
+        realtime_tabular.heading(col, text=col)
+    for i, row in df.iterrows():
+        realtime_tabular.insert('', i, values=list(row))
+    print('Actualizando tiempo real cada {} segundos'.format(freq_actualizacion_var_control.get()))
+    window.after(freq_actualizacion_var_control.get() * 1000, mostrar_datos_tabulares)
+
+
+def mostrar_datos_tabulares_wallet():
+    index_wallet = -1
+    for item in wallet_tabular.get_children():
+        wallet_tabular.delete(item)
+    if constants.WALLET_TOTAL:
+        columns = ['Index', 'Stock', 'QTY', 'Expense', 'AccCharge', 'Balance', 'Tobin']
+        wallet_tabular['columns'] = columns
+        for col in columns:
+            wallet_tabular.column(col, anchor='center')
+            wallet_tabular.heading(col, text=col)
+
+        for compra in constants.WALLET_TOTAL:
+            index_wallet += 1
+            compra.index = index_wallet
+            for accion in realtime:
+                if accion['Stock'] == compra.stock:
+                    compra.balance = '{}€'.format(round((accion['Price'] * compra.qty) - compra.accountcharge), 2)
+
+            wallet_tabular.insert('', 'end', values=(compra.index, compra.stock, compra.qty,
+                                                     compra.expense, compra.accountcharge, compra.balance,
+                                                     compra.tobin))
+            print('Actualizando wallet cada {} segundos'.format(freq_actualizacion_var_control.get()))
+    window.after(freq_actualizacion_var_control.get() * 1000, mostrar_datos_tabulares_wallet)
+
+
+# Creamos funcion para mostrar el tiempo real.
+def show_tiempo_real():
+    global realtime
+
+    result = functions.urlcontent()
+    realtime = functions.scrapurl(result)
+    df = pd.DataFrame(realtime)
+
+    return df
+
+
+def control_freq_actualizacion(nuevo_valor):
+    freq_actualizacion_var_control.set(nuevo_valor)
+    print(freq_actualizacion_var_control.get())
+
+
+# Configuracion de la ventana Root.
+window = tk.Tk()
+window.title('WallettrakerUI by elhor')
+window.geometry('1920x1080')
+window.resizable(False, False)
+# window.iconbitmap(constants.PATH_ICON_WINDOW)
+
+# Crear la barra de menu
+barra_menu = tk.Menu(window)
+
+# Creamos menu archivo
+archivo_menu = tk.Menu(barra_menu, tearoff=False)
+archivo_menu.add_command(label='Cargar cartera')
+archivo_menu.add_command(label='Guardar cartera')
+archivo_menu.add_separator()
+archivo_menu.add_command(label='Salir', command=window.quit)
+
+# Agregar el menu archivo a la barra_menu
+barra_menu.add_cascade(label='Archivo', menu=archivo_menu)
+window.config(menu=barra_menu)
+
 # Creamos frame para el label y el reloj
 frame_superior = tk.Frame(window)
 
 # Creamos el label.
-cabecera = tk.Label(frame_superior, text=TITLE)
+cabecera = tk.Label(frame_superior, text=constants.TITLE)
 cabecera.config(font=('Terminal', 25))
 cabecera.grid(row=0, column=0)
 
@@ -125,77 +236,19 @@ control_index = tk.IntVar()
 
 freq_actualizacion_var_control = tk.IntVar(value=10)
 
-
-def control_freq_actualizacion(nuevo_valor):
-    freq_actualizacion_var_control.set(nuevo_valor)
-    print(freq_actualizacion_var_control.get())
-
-
 label_slide = tk.Label(frame_opciones, text='\n\nFrecuencia de actualizacion', font=('Terminal', 10))
 label_bajo_slide = tk.Label(frame_opciones, text='Segundos', font=('Terminal', 8))
 slide = tk.Scale(frame_opciones, from_=3, to=20, orient='horizontal', resolution=1,
                  variable=freq_actualizacion_var_control, command=control_freq_actualizacion, sliderlength=10)
 
-
-# Funcion para añadir compra
-def aniadir_compra():
-    try:
-        compra = csv_manager.Stock(stock=realtime[control_opcion.get()]['Stock'],
-                                   buyprice=control_price.get(),
-                                   qty=control_qty.get(),
-                                   expense=control_expense.get(),
-                                   index=control_index.get(),
-                                   tobin=opcion_tobin.get())
-
-        if opcion_tobin.get():
-            compra.calcular_tobin()
-
-        wallet_total.append(compra)
-        mostrar_pop_up_compra()
-
-    except tk.TclError:
-        mostrar_popup_error()
-
-
-def aniadir_venta():
-    try:
-        delete_wallet = control_opcion.get()
-        wallet_total.pop(delete_wallet)
-        mostrar_pop_up_venta()
-    except IndexError:
-        mostrar_popup_error()
-
-
-'''def debug():
-    indice = entry_stock.get()
-    print(type(indice)'''
-
-
-# Funcion para cambiar color boton y habilitar o deshabilitar la entrada de los entry y configurar en boton
-# con el command de venta o de compra
-def color_boton():
-    if opcion.get() == 'venta':
-        boton_ejecutar.config(bg='green', command=aniadir_venta)
-        entry_qty.config(state='disabled')
-        entry_price.config(state='disabled')
-        entry_expense.config(state='disabled')
-
-        # print(realtime)
-    elif opcion.get() == 'compra':
-        boton_ejecutar.config(bg='red', command=aniadir_compra)
-        entry_qty.config(state='normal')
-        entry_price.config(state='normal')
-        entry_expense.config(state='normal')
-
-
 # Creamos opciones dentro de frame.
 opcion_radio_tobin = tk.Checkbutton(frame_opciones, text='Tobin', font=('Terminal', 16), variable=opcion_tobin)
-opcion_venta = tk.Radiobutton(frame_opciones, text='Venta ', font=('Terminal', 16), variable=opcion, value='venta'
-                              , command=color_boton)
+opcion_venta = tk.Radiobutton(frame_opciones, text='Venta ', font=('Terminal', 16), variable=opcion, value='venta',
+                              command=color_boton)
 opcion_venta.pack()
 
-opcion_compra = tk.Radiobutton(frame_opciones, text='Compra ', font=('Terminal', 16), variable=opcion, value='compra'
-                               , command=color_boton)
+opcion_compra = tk.Radiobutton(frame_opciones, text='Compra ', font=('Terminal', 16), variable=opcion, value='compra',
+                               command=color_boton)
 opcion_compra.pack()
 
 label_stock = tk.Label(frame_opciones, text='Valor: ', font=('Terminal', 16))
@@ -235,9 +288,6 @@ label_slide.pack()
 slide.pack()
 label_bajo_slide.pack()
 
-# Checkeamos botones y opciones
-color_boton()
-
 # Creamos tabla.
 
 realtime_tabular = ttk.Treeview(window, height=35)
@@ -256,146 +306,13 @@ label_wallet = tk.Label(text='Wallet Personal', font=('Terminal', 20))
 label_wallet.grid(row=2, column=0)
 
 
-# Funcion para reloj en pantalla
-def actualizar_hora():
-    reloj.config(text=time.strftime('\t%H:%M:%S'), font=('Terminal', 25))
-    window.after(1000, actualizar_hora)
+def main():
+    actualizar_hora()
+    color_boton()
+    mostrar_datos_tabulares()
+    mostrar_datos_tabulares_wallet()
+    window.mainloop()
 
 
-actualizar_hora()
-
-
-# Creamos funcion para descarga de pagina a scrapear.
-def urlcontent():
-    result = requests.get(url)
-    return result
-
-
-# Creamos funcion para filtrar, listar y crear los DataFrames del contenido de la pagina descargada.
-def scrapurl(result):
-    realtime = []
-    url_content = BeautifulSoup(result.content, "html.parser")
-    acc_scrap = url_content.find_all(class_="ellipsis-short")
-    price_scrap = url_content.find_all(class_="tv-price")
-    time_scrap = url_content.find_all(class_="tv-time")
-    close_scrap = url_content.find_all(class_="tv-close")
-    var_scrap = url_content.find_all(class_="tv-change-percent")
-    more_or_less_scrap = url_content.find_all(class_="tv-change-abs")
-
-    index_number = -1
-    index = []
-    acciones = []
-    precio_acciones = []
-    tiempo_acciones = []
-    var_acciones = []
-    close_acciones = []
-    more_or_less_acciones = []
-
-    for acc in acc_scrap:
-        acc = acc.text.replace("\t", "").replace("\r", "").replace("\n", "")
-        acciones.append(acc)
-        index_number += 1
-        index.append(index_number)
-
-    for price in price_scrap:
-        if "\nPrecio\n" not in price.text:
-            price = price.text.replace("\n", "").replace(",", ".")
-            precio_acciones.append(float(price))
-
-    for time in time_scrap:
-        if "\nÚLTIMA ACTUALIZACIÓN\n" not in time.text:
-            time = time.text.replace("\n", "")
-            tiempo_acciones.append(time)
-
-    for var in var_scrap:
-        if "\n%\n" not in var.text:
-            var = var.text.replace("\n", "")
-            var_acciones.append(var)
-
-    for close in close_scrap:
-        if "\nPRECIO DE CIERRE\n" not in close.text:
-            close = close.text.replace("\n", "").replace("\t", "").replace("\r", "")
-            close_acciones.append(close)
-
-    for more_or_less in more_or_less_scrap:
-        if "\n+/-" not in more_or_less.text:
-            more_or_less = more_or_less.text.replace("\n", "")
-            more_or_less_acciones.append(more_or_less)
-
-    for Index, Stock, Price, Time, Var, Close, VarinPercent in zip(index, acciones, precio_acciones, tiempo_acciones,
-                                                                   var_acciones,
-                                                                   close_acciones, more_or_less_acciones):
-        value = {"Index": Index, "Stock": Stock, "Price": Price, "Time": Time, "%": Var, "Close": Close,
-                 "+/-": VarinPercent}
-
-        realtime.append(value)
-    return realtime
-
-
-# Creamos funcion para mostrar el tiempo real.
-
-def show_tiempo_real():
-    global realtime
-
-    result = urlcontent()
-    realtime = scrapurl(result)
-    df = pd.DataFrame(realtime)
-
-    '''if wallet_total:
-        print('\n' * 2)
-        for x in wallet_total:
-            for y in x:
-                if y == "Balance":
-                    for price in realtime:
-                        if price["Stock"] == x["Stock"]:
-                            x["Balance"] = "{} €".format((price["Price"] * x["Qty"]) - x["AccountCharge"])
-
-            df1 = pd.DataFrame(wallet_total)'''
-    return df
-
-
-def mostrar_datos_tabulares():
-    df = show_tiempo_real()
-    for item in realtime_tabular.get_children():
-        realtime_tabular.delete(item)
-    columnas = list(df.columns)
-    realtime_tabular['columns'] = columnas
-
-    for col in columnas:
-        realtime_tabular.column(col, anchor="center")
-        realtime_tabular.heading(col, text=col)
-    for i, row in df.iterrows():
-        realtime_tabular.insert('', i, values=list(row))
-    print('Actualizando tiempo real cada {} segundos'.format(freq_actualizacion_var_control.get()))
-    window.after(freq_actualizacion_var_control.get() * 1000, mostrar_datos_tabulares)
-
-
-def mostrar_datos_tabulares_wallet():
-    index_wallet = -1
-    for item in wallet_tabular.get_children():
-        wallet_tabular.delete(item)
-    if wallet_total:
-        columns = ['Index', 'Stock', 'QTY', 'Expense', 'AccCharge', 'Balance', 'Tobin']
-        wallet_tabular['columns'] = columns
-        for col in columns:
-            wallet_tabular.column(col, anchor='center')
-            wallet_tabular.heading(col, text=col)
-
-        for compra in wallet_total:
-            index_wallet += 1
-            compra.index = index_wallet
-            for accion in realtime:
-                if accion['Stock'] == compra.stock:
-                    compra.balance = '{}€'.format(round((accion['Price'] * compra.qty) - compra.accountcharge), 2)
-
-            wallet_tabular.insert('', 'end', values=(compra.index, compra.stock, compra.qty,
-                                                     compra.expense, compra.accountcharge, compra.balance,
-                                                     compra.tobin))
-            print('Actualizando wallet cada {} segundos'.format(freq_actualizacion_var_control.get()))
-    window.after(freq_actualizacion_var_control.get() * 1000, mostrar_datos_tabulares_wallet)
-
-
-mostrar_datos_tabulares()
-
-mostrar_datos_tabulares_wallet()
-window.mainloop()
+if __name__ == "__main__":
+    main()
