@@ -1,3 +1,5 @@
+import time
+
 import requests
 from bs4 import BeautifulSoup
 import constants
@@ -5,8 +7,18 @@ import constants
 
 # Creamos funcion para descarga de pagina a scrapear.
 def urlcontent():
-    result = requests.get(constants.URL)
-    return result
+    conexion = None
+
+    while not conexion:
+        try:
+            result = requests.get(constants.URL)
+            return result
+
+        except requests.exceptions.ConnectionError:
+            conexion = False
+            print('No hay conexión, revisa tu conexión a internet.', '\nReintentando en 5 segundos...')
+
+            time.sleep(5)
 
 
 # Creamos funcion para filtrar, listar y crear los DataFrames del contenido de la pagina descargada.
@@ -68,10 +80,3 @@ def scrapurl(result):
 
         realtime.append(value)
     return realtime
-
-
-
-
-
-
-
