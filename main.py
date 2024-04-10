@@ -140,6 +140,7 @@ def mostrar_datos_tabulares():
 
 def mostrar_datos_tabulares_wallet():
     index_wallet = -1
+
     for item in wallet_tabular.get_children():
         wallet_tabular.delete(item)
     if constants.WALLET_TOTAL:

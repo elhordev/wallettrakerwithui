@@ -1,5 +1,5 @@
 import time
-
+import csv_manager
 import requests
 from bs4 import BeautifulSoup
 import constants
@@ -31,6 +31,8 @@ def scrapurl(result):
     close_scrap = url_content.find_all(class_="tv-close")
     var_scrap = url_content.find_all(class_="tv-change-percent")
     more_or_less_scrap = url_content.find_all(class_="tv-change-abs")
+
+
 
     index_number = -1
     index = []
